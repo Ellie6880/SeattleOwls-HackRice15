@@ -21,6 +21,15 @@ body {
 form {
   display: flex;                   /* Arranges input and button in a row */
   gap: 1rem;                       /* Adds space between them */
+  margin-bottom: 1rem;            /* Adds space below the form */
+}
+
+#login-form, #signup-form {
+  flex-direction: column;
+}
+
+#login-form input, #signup-form input {
+  margin-bottom: 0.5rem;
 }
 
 /* The text input field */

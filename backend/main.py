@@ -1,6 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
+from backend.api.v1.api import api_router as api_router_v1
+
+from backend.api.v1.endpoints import tasks as task_router
+from backend.db.session import engine
+from backend.db.base_class import Base
+import backend.models.user
+import backend.models.task
 
 app = FastAPI(
     title="HackRice 15 Starter Code",
@@ -25,13 +35,14 @@ from backend.api.v1.api import api_router as api_router_v1
 
 app.include_router(api_router_v1, prefix="/api/v1")
 
-# Serve frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+templates = Jinja2Templates(directory="frontend")
 
-from backend.db.session import engine
-from backend.db.base_class import Base
-import backend.models.user  # ensure model is registered
-import backend.models.task  # ensure model is registered
+@app.get("/", response_class=HTMLResponse)
+def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# Serve frontend
+app.mount("/static", StaticFiles(directory="frontend/static", html=True), name="static")
 
 @app.on_event("startup")
 def on_startup():

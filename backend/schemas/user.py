@@ -10,14 +10,16 @@ class UserCreate(UserBase):
 
 # Properties to receive via API on update
 class UserUpdate(UserBase):
-    pass
+    email: EmailStr | None = None
+    password: str | None = None
+    is_active: bool | None = None
 
 class UserInDBBase(UserBase):
     id: int
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Additional properties to return via API
 class User(UserInDBBase):
@@ -26,3 +28,12 @@ class User(UserInDBBase):
 # Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+    class Config:
+        from_attributes = True
+
+class UserPublic(UserBase):
+    id: int
+
+    class Config:
+        from_attributes = True

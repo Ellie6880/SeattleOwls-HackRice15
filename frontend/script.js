@@ -9,15 +9,68 @@
        that can display a to-do list/tasks for a team.
 */
 // get references to the main HTML elements we're gonna interact with
+const loginForm = document.getElementById("login-form");  // form for logging in
+const signupForm = document.getElementById("signup-form"); // form for signing up
 const taskForm = document.getElementById("task-form");    // form for adding new tasks
 const taskInput = document.getElementById("task-input");  // input box where user types the task
 const taskList = document.getElementById("task-list");    //  <ul> where tasks will be displayed
 const API_BASE = "/api/v1";
+let token = null;
+
+// Show or hide forms
+function showTaskForm() {
+  loginForm.style.display = "none";
+  signupForm.style.display = "none";
+  taskForm.style.display = "flex";
+}
+
+// Login
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email, password})
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    token = data.access_token;
+    showTaskForm();
+    loadTasks();
+  } else {
+    alert("Login failed");
+  }
+});
+
+// Signup
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("signup-email").value;
+  const password = document.getElementById("signup-password").value;
+
+  const res = await fetch(`${API_BASE}/auth/signup`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email, password})
+  });
+
+  if (res.ok) {
+    alert("Signup successful! Please login.");
+  } else {
+    alert("Signup failed");
+  }
+});
 
 // This function loads tasks from the backend and displays them on the page
 async function loadTasks() {
   // Fetch tasks from the backend API
-  const res = await fetch(`${API_BASE}/tasks/`);
+  const res = await fetch(`${API_BASE}/tasks/`, {
+    headers: { "Authorization": "Bearer ${token}"}
+  });
   const tasks = await res.json(); // Parse the JSON response
 
   // Clear any previously rendered tasks
@@ -37,7 +90,9 @@ async function loadTasks() {
     checkbox.addEventListener("change", async () => {
       await fetch(`${API_BASE}/tasks/${task.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+                    "Authorization": "Bearer ${token}"
+        },
         body: JSON.stringify({ completed: checkbox.checked }),
       });
       loadTasks(); // Reload the tasks to reflect the updated state
@@ -61,6 +116,7 @@ async function loadTasks() {
     deleteBtn.addEventListener("click", async () => {
       await fetch(`${API_BASE}/tasks/${task.id}`, {
         method: "DELETE",
+        headers: { "Authorization": "Bearer ${token}"}
       });
       loadTasks(); // Refresh the list to remove the deleted task
     });
@@ -69,6 +125,7 @@ async function loadTasks() {
     li.appendChild(checkbox);
     li.appendChild(textSpan);
     li.appendChild(deleteBtn);
+    taskList.appendChild(li);
 
     // Add this <li> to the overall task list
     taskList.appendChild(li);
@@ -83,7 +140,9 @@ taskForm.addEventListener("submit", async (e) => {
   // Send a POST request to add the new task to the backend
   await fetch(`${API_BASE}/tasks/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json",
+                "Auhorization": "Bearer ${token}"
+    },
     body: JSON.stringify({ title: task }),
   });
 
