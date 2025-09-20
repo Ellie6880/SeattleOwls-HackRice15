@@ -1,21 +1,12 @@
+# This is a requirements file for a the medicine notification web-app.
+# Please make sure to install the required packages listed below in the requirements file in order to use the web-app.
+# Happy hacking!
+
 fastapi
-uvicorn[standard]
-
-# Database
-SQLAlchemy
-
-# Auth
+uvicorn
+sqlalchemy
+pydantic
+pandas
+apscheduler
+python-dotenv
 passlib[bcrypt]
-python-jose[cryptography]
-
-# Config
-pydantic-settings
-
-# LLM Providers (examples)
-openai
-anthropic
-google-generativeai
-
-# Other
-python-multipart
-email-validator

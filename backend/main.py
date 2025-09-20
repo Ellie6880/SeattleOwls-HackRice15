@@ -1,49 +1,56 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
+from . import models, schemas, crud
+from .database import SessionLocal, engine
 
-from backend.api.v1.api import api_router as api_router_v1
+models.Base.metadata.create_all(bind = engine)
 
-from backend.api.v1.endpoints import tasks as task_router
-from backend.db.session import engine
-from backend.db.base_class import Base
-import backend.models.user
-import backend.models.task
+app = FastAPI()
 
-app = FastAPI(
-    title="HackRice 15 Starter Code",
-    description="A solid foundation for your hackathon project.",
-    version="0.1.0",
-)
+# Add CORS Middleware
+origins = [
+    "http://localhost:3000" # For Local Dev
+    "https://medicinetracker.com" # For Production
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins = origins,
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"]
 )
 
-@app.get("/api/health")
-def health():
-    return {"status": "ok"}
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# Add routers
-from backend.api.v1.api import api_router as api_router_v1
+# Users
+@app.post("/register", response_model = schemas.UserResponse)
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_email(db, user.email)
+    if db_user:
+        raise HTTPException(status_code = 400, detail = "Email already registered")
+    return crud.create_user(db, user)
 
-app.include_router(api_router_v1, prefix="/api/v1")
+# Drugs
+@app.post("/drugs", response_model = schemas.DrugResponse)
+def add_drug(drug: schemas.DrugCreate, db: Session = Depends(get_db)):
+    return crud.create_drug(db, drug)
 
-templates = Jinja2Templates(directory="frontend")
+@app.get("/drugs", response_model = list[schemas.DrugResponse])
+def list_drugs(db: Session = Depends(get_db)):
+    return crud.get_drugs(db)
 
-@app.get("/", response_class=HTMLResponse)
-def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+# Prescriptions
+@app.post("/prescriptions", response_model = schemas.PrescriptionResponse)
+def add_prescription(prescription: schemas.PrescriptionCreate, db: Session = Depends(get_db)):
+    return crud.create_prescription(db, prescription)
 
-# Serve frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
-
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
+@app.get("/prescriptions/{user_id}", response_model = list[schemas.PrescriptionResponse])
+def list_prescriptions(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_prescriptions(db, user_id)
