@@ -42,7 +42,7 @@ def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 # Serve frontend
-app.mount("/static", StaticFiles(directory="frontend/static", html=True), name="static")
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 @app.on_event("startup")
 def on_startup():
